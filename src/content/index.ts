@@ -7,3 +7,4 @@ export { missionLogs } from './missionLogs';
 export { skills } from './skills';
 export { projects } from './projects';
 export { certificates, currentLearning } from './certificates';
+export { novaProfile } from './novaAi';

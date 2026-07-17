@@ -10,6 +10,7 @@
 import React from 'react';
 import { useMissionStore } from '@/store/useMissionStore';
 import AnimatedLogo from '@/components/hero/AnimatedLogo';
+import PersonalStory from '@/components/hero/PersonalStory';
 import { profile, missionLogs } from '@/content';
 
 export default function HomePage() {
@@ -114,6 +115,9 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Personal Story */}
+        <PersonalStory />
 
         {/* Recent Mission Logs */}
         <section className="mission-logs-section">
