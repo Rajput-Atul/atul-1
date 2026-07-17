@@ -9,6 +9,8 @@
 
 import React from 'react';
 import { useMissionStore } from '@/store/useMissionStore';
+import AnimatedLogo from '@/components/hero/AnimatedLogo';
+import { profile, missionLogs } from '@/content';
 
 export default function HomePage() {
   const { visitWorld } = useMissionStore();
@@ -16,6 +18,8 @@ export default function HomePage() {
   React.useEffect(() => {
     visitWorld('launch-bay');
   }, [visitWorld]);
+
+  const recentLogs = missionLogs.slice(0, 4);
 
   return (
     <div className="launch-bay">
@@ -27,18 +31,18 @@ export default function HomePage() {
             <span className="hero-badge-text">ATUL-1 Systems Online</span>
           </div>
 
+          <div className="hero-logo">
+            <AnimatedLogo size="lg" showText={false} />
+          </div>
+
           <h1 className="hero-title">
             <span className="hero-title-greeting">Hello, I'm</span>
-            <span className="hero-title-name">Atul Chauhan</span>
+            <span className="hero-title-name">{profile.name}</span>
           </h1>
 
-          <p className="hero-subtitle">
-            Software Engineer &middot; Java Backend Developer &middot; Creative Technologist
-          </p>
+          <p className="hero-subtitle">{profile.roles.join(' · ')}</p>
 
-          <p className="hero-tagline">
-            Code with Purpose. Design with Imagination. Build Experiences that Inspire.
-          </p>
+          <p className="hero-tagline">{profile.motto.line1} {profile.motto.line2}</p>
 
           <div className="hero-actions">
             <button
@@ -53,9 +57,9 @@ export default function HomePage() {
             </button>
 
             <a
-              href="/resume.pdf"
+              href="#"
               className="hero-btn hero-btn-secondary"
-              download
+              onClick={(e) => e.preventDefault()}
             >
               View Resume
             </a>
@@ -63,7 +67,7 @@ export default function HomePage() {
 
           <div className="hero-socials">
             <a
-              href="https://github.com/atulchauhan"
+              href={profile.social.github}
               target="_blank"
               rel="noopener noreferrer"
               className="hero-social-link"
@@ -72,7 +76,7 @@ export default function HomePage() {
               <span aria-hidden="true">GitHub</span>
             </a>
             <a
-              href="https://linkedin.com/in/atulchauhan"
+              href={profile.social.linkedin}
               target="_blank"
               rel="noopener noreferrer"
               className="hero-social-link"
@@ -81,7 +85,7 @@ export default function HomePage() {
               <span aria-hidden="true">LinkedIn</span>
             </a>
             <a
-              href="mailto:atul@example.com"
+              href={profile.social.email}
               className="hero-social-link"
               aria-label="Send Email"
             >
@@ -107,6 +111,27 @@ export default function HomePage() {
                 <h3>Connect</h3>
                 <p>Reach out and start a conversation</p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Recent Mission Logs */}
+        <section className="mission-logs-section">
+          <div className="mission-logs-container glass-strong">
+            <h2 className="mission-logs-title">Recent Mission Logs</h2>
+            <div className="mission-logs-list">
+              {recentLogs.map((log) => (
+                <div key={log.id} className="mission-log-item">
+                  <div className="mission-log-header">
+                    <span className="mission-log-id">{log.id.toUpperCase()}</span>
+                    <span className={`mission-log-status ${log.status}`}>
+                      {log.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <h3 className="mission-log-title">{log.title}</h3>
+                  <p className="mission-log-desc">{log.description}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -171,6 +196,12 @@ export default function HomePage() {
           font-size: 0.75rem;
           color: var(--color-text-muted, #94A3B8);
           letter-spacing: 0.05em;
+        }
+
+        .hero-logo {
+          margin-bottom: 2rem;
+          display: flex;
+          justify-content: center;
         }
 
         .hero-title {
@@ -282,7 +313,7 @@ export default function HomePage() {
 
         /* Mission Brief */
         .mission-brief-section {
-          margin-top: 2rem;
+          margin-bottom: 2rem;
         }
 
         .mission-brief-container {
@@ -332,6 +363,98 @@ export default function HomePage() {
           font-size: 0.875rem;
           color: var(--color-text-muted, #94A3B8);
           margin: 0;
+        }
+
+        /* Mission Logs */
+        .mission-logs-section {
+          margin-top: 2rem;
+        }
+
+        .mission-logs-container {
+          padding: 2rem;
+          border-radius: var(--radius-xl, 1rem);
+        }
+
+        .mission-logs-title {
+          font-family: var(--font-heading, 'Orbitron', sans-serif);
+          font-size: clamp(1.25rem, 2vw, 1.5rem);
+          text-align: center;
+          margin-bottom: 2rem;
+          color: var(--color-text, #F8FAFC);
+          letter-spacing: 0.1em;
+        }
+
+        .mission-logs-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .mission-log-item {
+          padding: 1rem 1.25rem;
+          border-radius: var(--radius-lg, 0.75rem);
+          background: var(--glass-bg, rgba(255,255,255,0.08));
+          border: 1px solid var(--border-color-light, rgba(255,255,255,0.08));
+          transition: all var(--transition-normal, 300ms ease);
+        }
+
+        .mission-log-item:hover {
+          background: var(--glass-bg-hover, rgba(255,255,255,0.12));
+          transform: translateX(4px);
+        }
+
+        .mission-log-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+        }
+
+        .mission-log-id {
+          font-family: var(--font-code, 'JetBrains Mono', monospace);
+          font-size: 0.75rem;
+          color: var(--color-text-dim, #64748B);
+          letter-spacing: 0.05em;
+        }
+
+        .mission-log-status {
+          font-family: var(--font-code, 'JetBrains Mono', monospace);
+          font-size: 0.625rem;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          padding: 0.125rem 0.5rem;
+          border-radius: var(--radius-full, 9999px);
+        }
+
+        .mission-log-status.completed {
+          background: rgba(34, 197, 94, 0.1);
+          color: var(--color-success, #22C55E);
+        }
+
+        .mission-log-status.in-progress {
+          background: rgba(245, 158, 11, 0.1);
+          color: var(--color-warning, #F59E0B);
+        }
+
+        .mission-log-status.locked {
+          background: rgba(100, 116, 139, 0.1);
+          color: var(--color-text-dim, #64748B);
+        }
+
+        .mission-log-title {
+          font-family: var(--font-heading, 'Orbitron', sans-serif);
+          font-size: 0.875rem;
+          color: var(--color-text, #F8FAFC);
+          margin-bottom: 0.375rem;
+          letter-spacing: 0.05em;
+        }
+
+        .mission-log-desc {
+          font-family: var(--font-body, 'Inter', sans-serif);
+          font-size: 0.8125rem;
+          color: var(--color-text-muted, #94A3B8);
+          margin: 0;
+          line-height: 1.5;
         }
 
         @media (max-width: 768px) {

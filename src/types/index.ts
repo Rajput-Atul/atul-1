@@ -88,6 +88,7 @@ export type SkillCategory =
   | 'devops'
   | 'cloud'
   | 'tools'
+  | 'architecture'
   | 'other';
 
 // Certificate
