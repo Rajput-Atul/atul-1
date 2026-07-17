@@ -2,6 +2,7 @@
  * ATUL-1 — Universe Story Data
  *
  * Narrative assets, world lore, opening sequence, and story elements.
+ * The opening sequence is cinematic — visuals and minimal text only.
  */
 
 export const universe = {
@@ -19,53 +20,33 @@ export const universe = {
 export const openingSequence = [
   {
     scene: 1,
-    title: 'Complete darkness',
-    description: `Complete darkness.
-Silence.
-Slow heartbeat.
-A distant blue light appears.
-Tiny stars begin to emerge.
-A massive spaceship slowly drifts into view.
-The engines ignite.
-Particles stream across the screen.
-Soft orchestral sci-fi ambience begins.
-The camera flies toward the spacecraft.`,
+    title: 'Deep Space',
+    // Visual: darkness, stars appearing, distant nebula light, slow particles, ship silhouette
+    duration: 5000,
   },
   {
     scene: 2,
-    title: 'Docking Bay',
-    description: `Large mechanical doors slowly open.
-Blue holographic lights activate.
-The visitor enters.
-Power begins restoring throughout the ship.
-Consoles illuminate.
-Robots awaken.
-Drones leave charging stations.
-Energy flows through transparent conduits.`,
+    title: 'Approach',
+    // Visual: camera flies toward ship, hangar doors open, holographic lights activate, mechanical arms move
+    duration: 5000,
   },
   {
     scene: 3,
-    title: 'System Boot',
-    description: `Large holographic interface appears.
-INITIALIZING SYSTEMS...
-
-Power Core — ONLINE
-Navigation — ONLINE
-Quantum AI — ONLINE
-Mission Database — ONLINE
-Archives — ONLINE
-Communication Array — ONLINE
-
-All Systems Operational`,
+    title: 'Boot Sequence',
+    // Visual: holographic interfaces appear, energy pulses, radar scans, digital maps, environment comes alive
+    duration: 5000,
   },
   {
     scene: 4,
     title: 'First Contact',
-    description: `The AI appears.
-A holographic blue figure slowly forms.
-It smiles gently.
-
-"Welcome aboard. I am NOVA. This vessel is designated ATUL-1. Mission Explorer detected. Permission granted. Preparing Digital Universe..."`,
+    // Visual: NOVA hologram materializes, particles assemble into figure, minimal dialogue
+    dialogue: [
+      'Welcome aboard, Mission Explorer.',
+      'I am NOVA.',
+      'ATUL-1 is now online.',
+      'Preparing Digital Universe...',
+    ],
+    duration: 6000,
   },
 ] as const;
 

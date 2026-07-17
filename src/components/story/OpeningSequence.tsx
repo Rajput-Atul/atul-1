@@ -1,8 +1,8 @@
 /**
  * OpeningSequence — ATUL-1 Cinematic Intro
  *
- * Plays the opening cinematic sequence when the site loads.
- * Shows the story of awakening aboard ATUL-1.
+ * A cinematic opening sequence with minimal text.
+ * The story is told through visuals, animation, and atmosphere.
  */
 
 'use client';
@@ -17,28 +17,51 @@ interface OpeningSequenceProps {
 export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
   const [currentScene, setCurrentScene] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [dialogueIndex, setDialogueIndex] = useState(0);
 
   useEffect(() => {
-    // Start sequence after loading screen
-    const startTimer = setTimeout(() => setIsVisible(true), 500);
-    return () => clearTimeout(startTimer);
+    const timer = setTimeout(() => setIsVisible(true), 300);
+    return () => clearTimeout(timer);
   }, []);
 
+  // Auto-advance scenes
   useEffect(() => {
     if (!isVisible) return;
 
-    // Advance scenes automatically
-    if (currentScene < openingSequence.length - 1) {
-      const sceneTimer = setTimeout(() => {
-        setCurrentScene((prev) => prev + 1);
-      }, 4000);
-      return () => clearTimeout(sceneTimer);
-    } else {
-      // End sequence after final scene
+    const current = openingSequence[currentScene];
+    const duration = current.duration || 5000;
+
+    // For scene 4, cycle through dialogue
+    if (current.scene === 4 && current.dialogue) {
+      const dialogueInterval = setInterval(() => {
+        setDialogueIndex((prev) => {
+          if (prev < current.dialogue!.length - 1) {
+            return prev + 1;
+          }
+          clearInterval(dialogueInterval);
+          return prev;
+        });
+      }, duration / current.dialogue.length);
+
       const endTimer = setTimeout(() => {
         onComplete();
-      }, 5000);
-      return () => clearTimeout(endTimer);
+      }, duration);
+
+      return () => {
+        clearInterval(dialogueInterval);
+        clearTimeout(endTimer);
+      };
+    } else {
+      const timer = setTimeout(() => {
+        if (currentScene < openingSequence.length - 1) {
+          setCurrentScene((prev) => prev + 1);
+          setDialogueIndex(0);
+        } else {
+          onComplete();
+        }
+      }, duration);
+
+      return () => clearTimeout(timer);
     }
   }, [isVisible, currentScene, onComplete]);
 
@@ -48,29 +71,48 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
 
   return (
     <div className="opening-sequence">
-      <div className="opening-content">
-        <div className="opening-scene-indicator">
-          Scene {scene.scene} of {openingSequence.length}
-        </div>
-        <h2 className="opening-scene-title">{scene.title}</h2>
-        <div className="opening-scene-description">
-          {scene.description.split('\n').map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
-        </div>
+      {/* Scene indicator - very subtle */}
+      <div className="opening-scene-indicator">
+        Scene {scene.scene} / {openingSequence.length}
       </div>
 
-      {/* Skip Button */}
+      {/* Minimal title */}
+      <h1 className="opening-title">{scene.title}</h1>
+
+      {/* Dialogue for scene 4 */}
+      {scene.scene === 4 && scene.dialogue && (
+        <div className="opening-dialogue">
+          {scene.dialogue.slice(0, dialogueIndex + 1).map((line, i) => (
+            <p
+              key={i}
+              className="dialogue-line"
+              style={{ animationDelay: `${i * 0.3}s` }}
+            >
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* ATUL-1 branding for final scene */}
+      {scene.scene === 4 && dialogueIndex >= 2 && (
+        <div className="opening-brand" style={{ animationDelay: '0.5s' }}>
+          <span className="brand-text">ATUL-1</span>
+          <span className="brand-subtext">Powered by NOVA</span>
+        </div>
+      )}
+
+      {/* Skip button */}
       <button
         className="opening-skip-btn"
         onClick={onComplete}
         type="button"
         aria-label="Skip opening sequence"
       >
-        Skip Intro →
+        Skip
       </button>
 
-      {/* Progress Dots */}
+      {/* Progress dots */}
       <div className="opening-progress">
         {openingSequence.map((_, index) => (
           <div
@@ -91,45 +133,71 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
           justify-content: center;
           background: var(--color-background, #020617);
           padding: 2rem;
-          animation: fadeIn 1s ease forwards;
-        }
-
-        .opening-content {
-          max-width: 700px;
-          width: 100%;
-          text-align: center;
+          animation: fadeIn 1.5s ease forwards;
         }
 
         .opening-scene-indicator {
+          position: absolute;
+          top: 2rem;
+          left: 50%;
+          transform: translateX(-50%);
           font-family: var(--font-code, 'JetBrains Mono', monospace);
           font-size: 0.75rem;
           color: var(--color-text-dim, #64748B);
           letter-spacing: 0.1em;
-          margin-bottom: 1.5rem;
         }
 
-        .opening-scene-title {
+        .opening-title {
+          font-family: var(--font-heading, 'Orbitron', sans-serif);
+          font-size: clamp(2rem, 5vw, 4rem);
+          color: var(--color-primary, #3B82F6);
+          letter-spacing: 0.15em;
+          margin-bottom: 3rem;
+          opacity: 0;
+          animation: titleFade 2s ease forwards 0.5s;
+        }
+
+        .opening-dialogue {
+          max-width: 600px;
+          width: 100%;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .dialogue-line {
+          font-family: var(--font-body, 'Inter', sans-serif);
+          font-size: clamp(1rem, 2vw, 1.25rem);
+          color: var(--color-text, #F8FAFC);
+          margin: 0;
+          opacity: 0;
+          animation: dialogueFade 1s ease forwards;
+          line-height: 1.6;
+        }
+
+        .opening-brand {
+          margin-top: 3rem;
+          text-align: center;
+          opacity: 0;
+          animation: brandFade 1.5s ease forwards;
+        }
+
+        .brand-text {
+          display: block;
           font-family: var(--font-heading, 'Orbitron', sans-serif);
           font-size: clamp(1.5rem, 3vw, 2.5rem);
           color: var(--color-primary, #3B82F6);
-          margin-bottom: 2rem;
-          letter-spacing: 0.1em;
-          animation: slideUp 0.8s ease forwards;
+          letter-spacing: 0.2em;
+          margin-bottom: 0.5rem;
         }
 
-        .opening-scene-description {
-          font-family: var(--font-body, 'Inter', sans-serif);
-          font-size: clamp(0.875rem, 1.2vw, 1.063rem);
+        .brand-subtext {
+          display: block;
+          font-family: var(--font-code, 'JetBrains Mono', monospace);
+          font-size: 0.875rem;
           color: var(--color-text-muted, #94A3B8);
-          line-height: 1.8;
-        }
-
-        .opening-scene-description p {
-          margin: 0 0 0.75rem;
-          animation: fadeIn 0.6s ease forwards;
-          opacity: 0;
-          animation-delay: 0.2s;
-          animation-fill-mode: forwards;
+          letter-spacing: 0.1em;
         }
 
         .opening-skip-btn {
@@ -137,18 +205,19 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
           bottom: 2rem;
           right: 2rem;
           padding: 0.5rem 1.5rem;
-          border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+          border: 1px solid var(--border-color, rgba(255,255,255,0.1));
           border-radius: var(--radius-md, 0.5rem);
           background: transparent;
-          color: var(--color-text-muted, #94A3B8);
+          color: var(--color-text-dim, #64748B);
           font-family: var(--font-body, 'Inter', sans-serif);
           font-size: 0.875rem;
           cursor: pointer;
           transition: all var(--transition-fast, 150ms ease);
+          opacity: 0;
+          animation: fadeIn 1s ease forwards 2s;
         }
 
         .opening-skip-btn:hover {
-          background: var(--glass-bg-hover, rgba(255,255,255,0.12));
           color: var(--color-text, #F8FAFC);
           border-color: var(--color-primary, #3B82F6);
         }
@@ -159,12 +228,12 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
           left: 50%;
           transform: translateX(-50%);
           display: flex;
-          gap: 0.5rem;
+          gap: 0.75rem;
         }
 
         .opening-dot {
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           background: var(--color-surface-light, #1E293B);
           transition: all var(--transition-normal, 300ms ease);
@@ -172,7 +241,7 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
 
         .opening-dot.active {
           background: var(--color-primary, #3B82F6);
-          box-shadow: 0 0 10px var(--color-primary, #3B82F6);
+          box-shadow: 0 0 8px var(--color-primary, #3B82F6);
         }
 
         @keyframes fadeIn {
@@ -180,7 +249,29 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
           to { opacity: 1; }
         }
 
-        @keyframes slideUp {
+        @keyframes titleFade {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes dialogueFade {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes brandFade {
           from {
             opacity: 0;
             transform: translateY(20px);
@@ -192,9 +283,17 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
         }
 
         @media (max-width: 768px) {
+          .opening-scene-indicator {
+            top: 1rem;
+          }
+
           .opening-skip-btn {
             bottom: 1rem;
             right: 1rem;
+          }
+
+          .opening-progress {
+            bottom: 1rem;
           }
         }
       `}</style>
