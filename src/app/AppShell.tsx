@@ -19,19 +19,18 @@ interface AppShellProps {
 }
 
 export default function AppShell({ children }: AppShellProps) {
-  const { isLoading, isIntroComplete, completeIntro } = useMissionStore();
+  const { isLoading, showOpeningSequence, completeOpeningSequence } = useMissionStore();
   const [showOpening, setShowOpening] = useState(false);
 
-  // After loading completes, start opening sequence
   React.useEffect(() => {
-    if (!isLoading && !isIntroComplete) {
+    if (!isLoading && showOpeningSequence && !showOpening) {
       setShowOpening(true);
     }
-  }, [isLoading, isIntroComplete]);
+  }, [isLoading, showOpeningSequence, showOpening]);
 
   const handleOpeningComplete = () => {
     setShowOpening(false);
-    completeIntro();
+    completeOpeningSequence();
   };
 
   // Loading screen
