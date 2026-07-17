@@ -15,7 +15,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMissionStore } from '@/store/useMissionStore';
 import { novaProfile } from '@/content';
 
@@ -25,62 +25,62 @@ interface OpeningSequenceProps {
 
 type SceneType = 'black' | 'deep-space' | 'signal' | 'ship-reveal' | 'docking' | 'system-boot' | 'first-contact' | 'transition';
 
+const SCENE_TIMELINE: { scene: SceneType; end: number }[] = [
+  { scene: 'black', end: 2000 },
+  { scene: 'deep-space', end: 6000 },
+  { scene: 'signal', end: 10000 },
+  { scene: 'ship-reveal', end: 16000 },
+  { scene: 'docking', end: 25000 },
+  { scene: 'system-boot', end: 35000 },
+  { scene: 'first-contact', end: 45000 },
+  { scene: 'transition', end: 60000 },
+];
+
 export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
   const [currentScene, setCurrentScene] = useState<SceneType>('black');
   const [isVisible, setIsVisible] = useState(false);
   const [dialogueIndex, setDialogueIndex] = useState(0);
-  const [showUI, setShowUI] = useState(false);
-  const { completeOpeningSequence, hasSeenIntro } = useMissionStore();
+  const { completeOpeningSequence } = useMissionStore();
   const startTimeRef = useRef<number>(0);
+  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     startTimeRef.current = Date.now();
     setIsVisible(true);
-  }, []);
 
-  // Scene progression timeline
-  useEffect(() => {
-    if (!isVisible) return;
+    const tick = () => {
+      const elapsed = Date.now() - startTimeRef.current;
 
-    const elapsed = Date.now() - startTimeRef.current;
+      // Find current scene based on elapsed time
+      const current = SCENE_TIMELINE.find((s) => elapsed < s.end) || SCENE_TIMELINE[SCENE_TIMELINE.length - 1];
+      setCurrentScene(current.scene);
 
-    // Scene transitions based on time
-    if (elapsed < 2000) {
-      setCurrentScene('black');
-    } else if (elapsed < 6000) {
-      setCurrentScene('deep-space');
-    } else if (elapsed < 10000) {
-      setCurrentScene('signal');
-    } else if (elapsed < 16000) {
-      setCurrentScene('ship-reveal');
-    } else if (elapsed < 25000) {
-      setCurrentScene('docking');
-    } else if (elapsed < 35000) {
-      setCurrentScene('system-boot');
-    } else if (elapsed < 45000) {
-      setCurrentScene('first-contact');
-    } else if (elapsed < 60000) {
-      setCurrentScene('transition');
-      setShowUI(true);
-    } else {
-      handleComplete();
-    }
-
-    // Dialogue timing for first contact scene
-    if (elapsed >= 35000 && elapsed < 45000) {
-      const dialogueElapsed = elapsed - 35000;
-      const dialogueLines = novaProfile.greetings.firstVisit.split('\n').filter(line => line.trim() !== '');
-      const lineIndex = Math.floor(dialogueElapsed / 1500);
-      if (lineIndex < dialogueLines.length) {
-        setDialogueIndex(lineIndex);
+      // Dialogue timing for first contact scene (35s-45s)
+      if (elapsed >= 35000 && elapsed < 45000) {
+        const dialogueElapsed = elapsed - 35000;
+        const dialogueLines = novaProfile.greetings.firstVisit.split('\n').filter((line) => line.trim() !== '');
+        const lineIndex = Math.floor(dialogueElapsed / 1500);
+        setDialogueIndex(Math.min(lineIndex, dialogueLines.length - 1));
       }
-    }
-  }, [isVisible, hasSeenIntro]);
 
-  const handleComplete = () => {
+      if (elapsed < 60000) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        handleComplete();
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [onComplete]);
+
+  const handleComplete = useCallback(() => {
     completeOpeningSequence();
     onComplete();
-  };
+  }, [completeOpeningSequence, onComplete]);
 
   const handleSkip = () => {
     handleComplete();
@@ -143,7 +143,7 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
               <div className="nova-figure" />
             </div>
             <div className="dialogue-container">
-              {novaProfile.greetings.firstVisit.split('\n').filter(line => line.trim() !== '').slice(0, dialogueIndex + 1).map((line, i) => (
+              {novaProfile.greetings.firstVisit.split('\n').filter((line) => line.trim() !== '').slice(0, dialogueIndex + 1).map((line, i) => (
                 <p key={i} className="dialogue-line" style={{ animationDelay: `${i * 0.3}s` }}>
                   {line}
                 </p>
@@ -165,28 +165,18 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
 
       {/* Minimal Scene Title */}
       {sceneTitles[currentScene] && currentScene !== 'black' && currentScene !== 'transition' && (
-        <div className="scene-title">
-          {sceneTitles[currentScene]}
-        </div>
+        <div className="scene-title">{sceneTitles[currentScene]}</div>
       )}
 
       {/* Skip Button */}
-      <button
-        className="opening-skip-btn"
-        onClick={handleSkip}
-        type="button"
-        aria-label="Skip opening sequence"
-      >
+      <button className="opening-skip-btn" onClick={handleSkip} type="button" aria-label="Skip opening sequence">
         Skip Intro
       </button>
 
       {/* Progress Indicator */}
       <div className="opening-progress">
-        {(['deep-space', 'signal', 'ship-reveal', 'docking', 'system-boot', 'first-contact', 'transition'] as SceneType[]).map((scene, index) => (
-          <div
-            key={scene}
-            className={`progress-segment ${currentScene === scene ? 'active' : ''}`}
-          />
+        {SCENE_TIMELINE.map((s) => (
+          <div key={s.scene} className={`progress-segment ${currentScene === s.scene ? 'active' : ''}`} />
         ))}
       </div>
 
@@ -218,8 +208,7 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
         .stars-layer {
           position: absolute;
           inset: 0;
-          background-image: 
-            radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
+          background-image: radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
             radial-gradient(2px 2px at 40px 70px, #ffffff, transparent),
             radial-gradient(1px 1px at 90px 40px, #ffffff, transparent),
             radial-gradient(2px 2px at 160px 120px, #ffffff, transparent);
