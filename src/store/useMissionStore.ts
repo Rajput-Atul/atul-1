@@ -2,6 +2,7 @@
  * ATUL-1 Global Mission Store (Zustand)
  *
  * Manages mission progress, visited worlds, achievements, and settings.
+ * Tracks intro cinematic state: first visit vs returning visitor.
  */
 
 import { create } from 'zustand';
@@ -18,6 +19,7 @@ interface MissionStore {
   settings: AppSettings;
   isLoading: boolean;
   showOpeningSequence: boolean;
+  hasSeenIntro: boolean;
 
   // Actions
   setCurrentWorld: (world: WorldId) => void;
@@ -63,7 +65,7 @@ const defaultSettings: AppSettings = {
   reducedMotion: false,
 };
 
-export const useMissionStore = create<MissionStore>((set) => ({
+export const useMissionStore = create<MissionStore>((set, get) => ({
   // Initial State
   currentWorld: 'launch-bay',
   visitedWorlds: [],
@@ -74,6 +76,7 @@ export const useMissionStore = create<MissionStore>((set) => ({
   settings: defaultSettings,
   isLoading: true,
   showOpeningSequence: false,
+  hasSeenIntro: false,
 
   // Actions
   setCurrentWorld: (world) => set({ currentWorld: world }),
@@ -130,9 +133,21 @@ export const useMissionStore = create<MissionStore>((set) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  finishLoading: () => set({ isLoading: false, showOpeningSequence: true }),
+  finishLoading: () => {
+    const hasSeen = typeof window !== 'undefined' && sessionStorage.getItem('atul1-intro-seen');
+    set({
+      isLoading: false,
+      showOpeningSequence: !hasSeen,
+      hasSeenIntro: !!hasSeen,
+    });
+  },
 
-  completeOpeningSequence: () => set({ showOpeningSequence: false }),
+  completeOpeningSequence: () => {
+    set({ showOpeningSequence: false, hasSeenIntro: true });
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('atul1-intro-seen', 'true');
+    }
+  },
 
   resetProgress: () =>
     set({
@@ -143,5 +158,6 @@ export const useMissionStore = create<MissionStore>((set) => ({
       rank: 'cadet',
       isLoading: false,
       showOpeningSequence: false,
+      hasSeenIntro: false,
     }),
 }));
