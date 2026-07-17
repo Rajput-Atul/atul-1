@@ -1,0 +1,302 @@
+// =====================================================
+// ATUL-1 Design System — Global Styles
+// =====================================================
+
+// 1. Bootstrap CSS is imported via layout.tsx
+//    This file contains only ATUL-1 custom styles.
+
+// =====================================================
+// 2. ATUL-1 Design Tokens — CSS Variables
+// =====================================================
+
+:root {
+  // Primary Colors
+  --color-primary: #3B82F6;
+  --color-secondary: #06B6D4;
+  --color-accent: #8B5CF6;
+
+  // Functional Colors
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  // Backgrounds
+  --color-background: #020617;
+  --color-surface: #0F172A;
+  --color-surface-light: #1E293B;
+
+  // Text Colors
+  --color-text: #F8FAFC;
+  --color-text-muted: #94A3B8;
+  --color-text-dim: #64748B;
+
+  // Glass & Borders
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --glass-bg-active: rgba(255, 255, 255, 0.16);
+  --border-color: rgba(255, 255, 255, 0.15);
+  --border-color-light: rgba(255, 255, 255, 0.08);
+
+  // Glow Effects
+  --glow-cyan: #06B6D4;
+  --glow-blue: #3B82F6;
+  --glow-purple: #8B5CF6;
+
+  // Typography
+  --font-heading: 'Orbitron', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  --font-numbers: 'Space Grotesk', sans-serif;
+
+  // Spacing
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+  --spacing-4xl: 6rem;
+
+  // Border Radius
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  // Transitions
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+
+  // Z-Index Scale
+  --z-base: 0;
+  --z-content: 10;
+  --z-sticky: 100;
+  --z-dropdown: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-terminal: 500;
+  --z-loading: 600;
+  --z-cursor: 700;
+  --z-max: 9999;
+}
+
+// =====================================================
+// 3. Base Styles
+// =====================================================
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  overflow-x: hidden;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// =====================================================
+// 4. Typography Base
+// =====================================================
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text);
+}
+
+h1 { font-size: var(--fs-hero, clamp(2.5rem, 5vw, 6rem)); }
+h2 { font-size: var(--fs-h1, clamp(2rem, 4vw, 3rem)); }
+h3 { font-size: var(--fs-h2, clamp(1.5rem, 3vw, 2.25rem)); }
+h4 { font-size: var(--fs-h3, clamp(1.25rem, 2.5vw, 1.75rem)); }
+
+code, pre {
+  font-family: var(--font-code);
+}
+
+// =====================================================
+// 5. Scrollbar Styling
+// =====================================================
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-light);
+  border-radius: var(--radius-full);
+
+  &:hover {
+    background: var(--color-text-dim);
+  }
+}
+
+// =====================================================
+// 6. Selection Styling
+// =====================================================
+
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: var(--color-text);
+}
+
+// =====================================================
+// 7. Focus Styles (Accessibility)
+// =====================================================
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+// =====================================================
+// 8. Glassmorphism Utility Classes
+// =====================================================
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-lg);
+}
+
+.glass-strong {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+// =====================================================
+// 9. Glow Effects
+// =====================================================
+
+.glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3),
+              0 0 40px rgba(59, 130, 246, 0.1);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3),
+              0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3),
+              0 0 40px rgba(139, 92, 246, 0.1);
+}
+
+// =====================================================
+// 10. Animation Utilities
+// =====================================================
+
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.slide-up {
+  animation: slideUp 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+// =====================================================
+// 11. Reduced Motion
+// =====================================================
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// =====================================================
+// 12. Responsive Text Adjustments
+// =====================================================
+
+@media (max-width: 768px) {
+  :root {
+    --fs-hero: clamp(2rem, 8vw, 3rem);
+    --fs-h1: clamp(1.5rem, 6vw, 2rem);
+    --fs-h2: clamp(1.25rem, 5vw, 1.75rem);
+    --fs-h3: clamp(1rem, 4vw, 1.25rem);
+  }
+}
+
+// =====================================================
+// 13. Preloader Animation
+// =====================================================
+
+@keyframes reactorSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes energyPulse {
+  0%, 100% { 
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.8),
+                0 0 60px rgba(6, 182, 212, 0.4);
+  }
+}
