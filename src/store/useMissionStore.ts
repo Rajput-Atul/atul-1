@@ -17,7 +17,7 @@ interface MissionStore {
   rank: ExplorerRank;
   settings: AppSettings;
   isLoading: boolean;
-  isIntroComplete: boolean;
+  showOpeningSequence: boolean;
 
   // Actions
   setCurrentWorld: (world: WorldId) => void;
@@ -27,7 +27,8 @@ interface MissionStore {
   addMissionLog: (log: MissionLog) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   setLoading: (loading: boolean) => void;
-  completeIntro: () => void;
+  finishLoading: () => void;
+  completeOpeningSequence: () => void;
   resetProgress: () => void;
 }
 
@@ -72,7 +73,7 @@ export const useMissionStore = create<MissionStore>((set) => ({
   rank: 'cadet',
   settings: defaultSettings,
   isLoading: true,
-  isIntroComplete: false,
+  showOpeningSequence: false,
 
   // Actions
   setCurrentWorld: (world) => set({ currentWorld: world }),
@@ -129,7 +130,9 @@ export const useMissionStore = create<MissionStore>((set) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  completeIntro: () => set({ isIntroComplete: true, isLoading: false }),
+  finishLoading: () => set({ isLoading: false, showOpeningSequence: true }),
+
+  completeOpeningSequence: () => set({ showOpeningSequence: false }),
 
   resetProgress: () =>
     set({
@@ -138,6 +141,7 @@ export const useMissionStore = create<MissionStore>((set) => ({
       achievements: [],
       xp: 0,
       rank: 'cadet',
-      isIntroComplete: false,
+      isLoading: false,
+      showOpeningSequence: false,
     }),
 }));

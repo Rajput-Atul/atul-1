@@ -25,7 +25,7 @@ const bootSequence: SystemStatus[] = [
 ];
 
 export default function LoadingScreen() {
-  const { completeIntro } = useMissionStore();
+  const { finishLoading } = useMissionStore();
   const [progress, setProgress] = useState(0);
   const [systems, setSystems] = useState<SystemStatus[]>(bootSequence);
   const [showSkip, setShowSkip] = useState(false);
@@ -41,7 +41,7 @@ export default function LoadingScreen() {
         if (next >= 100) {
           clearInterval(bootInterval);
           clearTimeout(skipTimer);
-          setTimeout(() => completeIntro(), 500);
+          setTimeout(() => finishLoading(), 500);
           return 100;
         }
         return Math.min(next, 100);
@@ -69,10 +69,10 @@ export default function LoadingScreen() {
       clearInterval(statusInterval);
       clearTimeout(skipTimer);
     };
-  }, [completeIntro]);
+  }, [finishLoading]);
 
   const handleSkip = () => {
-    completeIntro();
+    finishLoading();
   };
 
   return (
