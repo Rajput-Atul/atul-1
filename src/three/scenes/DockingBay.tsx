@@ -7,65 +7,28 @@
 
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export default function DockingBay() {
-  const doorsRef = useRef<THREE.Group>(null);
-  const lightsRef = useRef<THREE.Group>(null);
-
-  const { leftDoor, rightDoor, indicators } = useMemo(() => {
-    const leftDoor = new THREE.Mesh(
-      new THREE.BoxGeometry(15, 12, 1),
-      new THREE.MeshStandardMaterial({
-        color: '#1a1a2e',
-        metalness: 0.9,
-        roughness: 0.2,
-      })
-    );
-    leftDoor.position.set(-7.5, 0, 0);
-
-    const rightDoor = new THREE.Mesh(
-      new THREE.BoxGeometry(15, 12, 1),
-      new THREE.MeshStandardMaterial({
-        color: '#1a1a2e',
-        metalness: 0.9,
-        roughness: 0.2,
-      })
-    );
-    rightDoor.position.set(7.5, 0, 0);
-
-    // Holographic indicators
-    const indicators = new THREE.Group();
-    for (let i = 0; i < 5; i++) {
-      const indicator = new THREE.Mesh(
-        new THREE.PlaneGeometry(2, 0.3),
-        new THREE.MeshBasicMaterial({
-          color: '#3B82F6',
-          transparent: true,
-          opacity: 0.6,
-        })
-      );
-      indicator.position.set(0, -5 + i * 2, 0.1);
-      indicators.add(indicator);
-    }
-
-    return { leftDoor, rightDoor, indicators };
-  }, []);
+  const leftDoorRef = useRef<THREE.Mesh>(null);
+  const rightDoorRef = useRef<THREE.Mesh>(null);
+  const indicatorsRef = useRef<THREE.Group>(null);
 
   useFrame((state) => {
     const elapsed = state.clock.elapsedTime;
-    // Animate doors opening
-    if (doorsRef.current) {
-      const openProgress = Math.min(elapsed / 5, 1);
-      doorsRef.current.children[0].position.x = -7.5 - openProgress * 5;
-      doorsRef.current.children[1].position.x = 7.5 + openProgress * 5;
+    const openProgress = Math.min(elapsed / 5, 1);
+
+    if (leftDoorRef.current) {
+      leftDoorRef.current.position.x = -7.5 - openProgress * 5;
+    }
+    if (rightDoorRef.current) {
+      rightDoorRef.current.position.x = 7.5 + openProgress * 5;
     }
 
-    // Animate indicators
-    if (lightsRef.current) {
-      lightsRef.current.children.forEach((child, i) => {
+    if (indicatorsRef.current) {
+      indicatorsRef.current.children.forEach((child, i) => {
         if (child instanceof THREE.Mesh) {
           child.material.opacity = 0.3 + Math.sin(elapsed * 2 + i) * 0.3;
         }
@@ -88,14 +51,23 @@ export default function DockingBay() {
       </mesh>
 
       {/* Docking Bay Doors */}
-      <group ref={doorsRef}>
-        <primitive object={leftDoor} />
-        <primitive object={rightDoor} />
-      </group>
+      <mesh ref={leftDoorRef} position={[-7.5, 0, 0]}>
+        <boxGeometry args={[15, 12, 1]} />
+        <meshStandardMaterial color="#1a1a2e" metalness={0.9} roughness={0.2} />
+      </mesh>
+      <mesh ref={rightDoorRef} position={[7.5, 0, 0]}>
+        <boxGeometry args={[15, 12, 1]} />
+        <meshStandardMaterial color="#1a1a2e" metalness={0.9} roughness={0.2} />
+      </mesh>
 
       {/* Holographic Indicators */}
-      <group ref={lightsRef}>
-        <primitive object={indicators} />
+      <group ref={indicatorsRef}>
+        {[...Array(5)].map((_, i) => (
+          <mesh key={i} position={[0, -5 + i * 2, 0.1]}>
+            <planeGeometry args={[2, 0.3]} />
+            <meshBasicMaterial color="#3B82F6" transparent opacity={0.6} />
+          </mesh>
+        ))}
       </group>
 
       {/* Energy Lines */}
