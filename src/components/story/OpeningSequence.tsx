@@ -1,44 +1,46 @@
 /**
- * OpeningSequence — ATUL-1 Cinematic Intro (Detailed Timeline)
+ * OpeningSequence — ATUL-1 Cinematic Intro
  *
- * 0-2s: Black screen, ambient sound begins
- * 2-6s: Deep space awakens - stars fade in, nebula appears
- * 6-10s: Blue signal appears - camera moves toward it
- * 10-16s: Ship revealed - ATUL-1 emerges from darkness
- * 16-25s: Docking sequence - doors open, systems activate
- * 25-35s: System boot - holographic screens, AI core glows
- * 35-45s: First contact - NOVA appears, minimal dialogue
- * 45-60s: Transition to hero - navigation fades in
+ * IMPORTANT: This is a CINEMATIC EXPERIENCE, not a slideshow.
  *
- * One-time cinematic per session. Returning visitors skip directly to hero.
+ * The scenes below describe visual events through 3D animation,
+ * camera movement, lighting, and particle effects.
+ *
+ * Do NOT display:
+ * - Scene titles
+ * - Descriptive text
+ * - PowerPoint-style slides
+ * - Tutorial screens
+ *
+ * Only minimal dialogue appears in Scene 4 (First Contact).
+ *
+ * Scene 1 (0-10s): Black screen → Stars fade in → Nebula appears → Ship emerges
+ * Scene 2 (10-20s): Camera flies toward ship → Docking bay doors open
+ * Scene 3 (20-30s): Enter ship → Holographic screens appear → Systems boot
+ * Scene 4 (30-40s): NOVA hologram materializes → Minimal dialogue
+ * Scene 5 (40-50s): Transition to hero section
  */
 
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useMissionStore } from '@/store/useMissionStore';
-import { novaProfile } from '@/content';
+import { Canvas } from '@react-three/fiber';
+import { CameraControls, Stars } from '@react-three/drei';
+import Starfield from '@/three/particles/Starfield';
+import Nebula from '@/three/particles/Nebula';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
 interface OpeningSequenceProps {
   onComplete: () => void;
 }
 
-type SceneType = 'black' | 'deep-space' | 'signal' | 'ship-reveal' | 'docking' | 'system-boot' | 'first-contact' | 'transition';
-
-const SCENE_TIMELINE: { scene: SceneType; end: number }[] = [
-  { scene: 'black', end: 2000 },
-  { scene: 'deep-space', end: 6000 },
-  { scene: 'signal', end: 10000 },
-  { scene: 'ship-reveal', end: 16000 },
-  { scene: 'docking', end: 25000 },
-  { scene: 'system-boot', end: 35000 },
-  { scene: 'first-contact', end: 45000 },
-  { scene: 'transition', end: 60000 },
-];
+type ScenePhase = 'black' | 'deep-space' | 'approach' | 'docking' | 'inside-ship' | 'first-contact' | 'transition';
 
 export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
-  const [currentScene, setCurrentScene] = useState<SceneType>('black');
-  const [isVisible, setIsVisible] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState<ScenePhase>('black');
+  const [showNovaDialogue, setShowNovaDialogue] = useState(false);
   const [dialogueIndex, setDialogueIndex] = useState(0);
   const { completeOpeningSequence } = useMissionStore();
   const startTimeRef = useRef<number>(0);
@@ -46,28 +48,43 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
 
   useEffect(() => {
     startTimeRef.current = Date.now();
-    setIsVisible(true);
 
     const tick = () => {
       const elapsed = Date.now() - startTimeRef.current;
 
-      // Find current scene based on elapsed time
-      const current = SCENE_TIMELINE.find((s) => elapsed < s.end) || SCENE_TIMELINE[SCENE_TIMELINE.length - 1];
-      setCurrentScene(current.scene);
-
-      // Dialogue timing for first contact scene (35s-45s)
-      if (elapsed >= 35000 && elapsed < 45000) {
-        const dialogueElapsed = elapsed - 35000;
-        const dialogueLines = novaProfile.greetings.firstVisit.split('\n').filter((line) => line.trim() !== '');
-        const lineIndex = Math.floor(dialogueElapsed / 1500);
-        setDialogueIndex(Math.min(lineIndex, dialogueLines.length - 1));
-      }
-
-      if (elapsed < 60000) {
-        rafRef.current = requestAnimationFrame(tick);
+      // Scene progression based on elapsed time
+      if (elapsed < 2000) {
+        setCurrentPhase('black');
+      } else if (elapsed < 10000) {
+        setCurrentPhase('deep-space');
+      } else if (elapsed < 20000) {
+        setCurrentPhase('approach');
+      } else if (elapsed < 30000) {
+        setCurrentPhase('docking');
+      } else if (elapsed < 40000) {
+        setCurrentPhase('inside-ship');
+      } else if (elapsed < 50000) {
+        setCurrentPhase('first-contact');
+        // Show dialogue after 3 seconds in first-contact scene
+        if (elapsed > 43000 && !showNovaDialogue) {
+          setShowNovaDialogue(true);
+        }
+        // Cycle dialogue
+        if (showNovaDialogue) {
+          const dialogueElapsed = elapsed - 43000;
+          const lineIndex = Math.floor(dialogueElapsed / 2000);
+          setDialogueIndex(Math.min(lineIndex, 3));
+        }
       } else {
-        handleComplete();
+        setCurrentPhase('transition');
+        setTimeout(() => {
+          completeOpeningSequence();
+          onComplete();
+        }, 3000);
+        return;
       }
+
+      rafRef.current = requestAnimationFrame(tick);
     };
 
     rafRef.current = requestAnimationFrame(tick);
@@ -75,501 +92,227 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [onComplete]);
-
-  const handleComplete = useCallback(() => {
-    completeOpeningSequence();
-    onComplete();
-  }, [completeOpeningSequence, onComplete]);
+  }, [onComplete, completeOpeningSequence, showNovaDialogue]);
 
   const handleSkip = () => {
-    handleComplete();
-  };
-
-  if (!isVisible) return null;
-
-  const sceneTitles: Record<SceneType, string> = {
-    'black': '',
-    'deep-space': 'Deep Space',
-    'signal': 'Signal Detected',
-    'ship-reveal': 'ATUL-1',
-    'docking': 'Docking Sequence',
-    'system-boot': 'System Boot',
-    'first-contact': 'First Contact',
-    'transition': 'Welcome Aboard',
+    completeOpeningSequence();
+    onComplete();
   };
 
   return (
     <div className="opening-sequence">
-      {/* Scene Visual Layer */}
-      <div className="opening-visual-layer">
-        {currentScene === 'deep-space' && (
-          <div className="scene-deep-space">
-            <div className="stars-layer" />
-            <div className="nebula-layer" />
-          </div>
-        )}
+      {/* 3D Canvas */}
+      <div className="opening-canvas">
+        <Canvas camera={{ position: [0, 0, 50], fov: 75 }} dpr={[1, 2]}>
+          <Suspense fallback={null}>
+            {/* Lighting */}
+            <ambientLight intensity={0.3} />
+            <pointLight position={[10, 10, 10]} intensity={1} color="#3B82F6" />
+            <pointLight position={[-10, -10, -10]} intensity={0.5} color="#06B6D4" />
 
-        {currentScene === 'signal' && (
-          <div className="scene-signal">
-            <div className="signal-pulse" />
-          </div>
-        )}
+            {/* Scene Elements */}
+            {currentPhase === 'deep-space' && (
+              <>
+                <Starfield count={15000} radius={1000} size={1.5} />
+                <Nebula count={15} radius={600} />
+              </>
+            )}
 
-        {currentScene === 'ship-reveal' && (
-          <div className="scene-ship">
-            <div className="ship-silhouette" />
-            <div className="ship-lights" />
-          </div>
-        )}
+            {currentPhase === 'approach' && (
+              <>
+                <Starfield count={15000} radius={1000} size={1.5} />
+                <Nebula count={15} radius={600} />
+                <CameraControls />
+              </>
+            )}
 
-        {currentScene === 'docking' && (
-          <div className="scene-docking">
-            <div className="doors-opening" />
-            <div className="energy-lines" />
-          </div>
-        )}
+            {currentPhase === 'docking' && (
+              <>
+                <Starfield count={15000} radius={1000} size={1.5} />
+                <DockingBay />
+              </>
+            )}
 
-        {currentScene === 'system-boot' && (
-          <div className="scene-boot">
-            <div className="holographic-screens" />
-            <div className="ai-core-glow" />
-          </div>
-        )}
-
-        {currentScene === 'first-contact' && (
-          <div className="scene-contact">
-            <div className="nova-hologram">
-              <div className="nova-figure" />
-            </div>
-            <div className="dialogue-container">
-              {novaProfile.greetings.firstVisit.split('\n').filter((line) => line.trim() !== '').slice(0, dialogueIndex + 1).map((line, i) => (
-                <p key={i} className="dialogue-line" style={{ animationDelay: `${i * 0.3}s` }}>
-                  {line}
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {currentScene === 'transition' && (
-          <div className="scene-transition">
-            <div className="hero-fade-in">
-              <h1 className="hero-title">ATUL-1</h1>
-              <p className="hero-subtitle">Atul Chauhan</p>
-              <p className="hero-role">Java Backend Developer</p>
-            </div>
-          </div>
-        )}
+            {(currentPhase === 'inside-ship' || currentPhase === 'first-contact') && (
+              <>
+                <ShipInterior />
+                {currentPhase === 'first-contact' && <NovaHologram />}
+              </>
+            )}
+          </Suspense>
+        </Canvas>
       </div>
 
-      {/* Minimal Scene Title */}
-      {sceneTitles[currentScene] && currentScene !== 'black' && currentScene !== 'transition' && (
-        <div className="scene-title">{sceneTitles[currentScene]}</div>
+      {/* Minimal Dialogue - Only in First Contact Scene */}
+      {showNovaDialogue && currentPhase === 'first-contact' && (
+        <div className="nova-dialogue">
+          {dialogueIndex >= 0 && (
+            <p className="dialogue-line">Welcome aboard, Mission Explorer.</p>
+          )}
+          {dialogueIndex >= 1 && (
+            <p className="dialogue-line">I am NOVA.</p>
+          )}
+          {dialogueIndex >= 2 && (
+            <p className="dialogue-line">ATUL-1 is now online.</p>
+          )}
+          {dialogueIndex >= 3 && (
+            <p className="dialogue-line">Preparing Digital Universe...</p>
+          )}
+        </div>
       )}
 
       {/* Skip Button */}
-      <button className="opening-skip-btn" onClick={handleSkip} type="button" aria-label="Skip opening sequence">
+      <button className="skip-btn" onClick={handleSkip}>
         Skip Intro
       </button>
-
-      {/* Progress Indicator */}
-      <div className="opening-progress">
-        {SCENE_TIMELINE.map((s) => (
-          <div key={s.scene} className={`progress-segment ${currentScene === s.scene ? 'active' : ''}`} />
-        ))}
-      </div>
 
       <style jsx>{`
         .opening-sequence {
           position: fixed;
           inset: 0;
-          z-index: var(--z-loading, 600);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          z-index: 9999;
           background: #000;
-          animation: fadeIn 1s ease forwards;
         }
 
-        .opening-visual-layer {
+        .opening-canvas {
           position: absolute;
           inset: 0;
-          overflow: hidden;
         }
 
-        .scene-deep-space {
+        .nova-dialogue {
           position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse at center, #0a0a1a 0%, #000000 100%);
-          animation: deepSpaceReveal 4s ease forwards;
-        }
-
-        .stars-layer {
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
-            radial-gradient(2px 2px at 40px 70px, #ffffff, transparent),
-            radial-gradient(1px 1px at 90px 40px, #ffffff, transparent),
-            radial-gradient(2px 2px at 160px 120px, #ffffff, transparent);
-          background-size: 200px 200px;
-          animation: starsFadeIn 3s ease forwards;
-          opacity: 0;
-        }
-
-        .nebula-layer {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-          animation: nebulaFadeIn 4s ease forwards 1s;
-          opacity: 0;
-        }
-
-        .scene-signal {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .signal-pulse {
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.5) 0%, transparent 70%);
-          animation: signalPulse 2s ease-in-out infinite;
-        }
-
-        .scene-ship {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .ship-silhouette {
-          width: 600px;
-          height: 200px;
-          background: linear-gradient(to bottom, #0a0a1a 0%, #1a1a2e 50%, #0a0a1a 100%);
-          clip-path: polygon(20% 50%, 80% 50%, 90% 60%, 85% 70%, 15% 70%, 10% 60%);
-          animation: shipReveal 3s ease forwards;
-          opacity: 0;
-        }
-
-        .ship-lights {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 20px;
-        }
-
-        .ship-lights::before,
-        .ship-lights::after {
-          content: '';
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #3B82F6;
-          box-shadow: 0 0 10px #3B82F6;
-          animation: navLightBlink 2s ease-in-out infinite;
-        }
-
-        .scene-docking {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to bottom, #000000 0%, #0a0a1a 100%);
-        }
-
-        .doors-opening {
-          position: absolute;
-          top: 50%;
+          bottom: 15%;
           left: 50%;
-          transform: translate(-50%, -50%);
-          width: 80%;
-          height: 60%;
-          border: 2px solid rgba(59, 130, 246, 0.3);
-          border-radius: 10px;
-          animation: doorsOpen 3s ease forwards;
-        }
-
-        .energy-lines {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%);
-          animation: energyFlow 2s ease-in-out infinite;
-        }
-
-        .scene-boot {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at center, rgba(59, 130, 246, 0.05) 0%, #000000 100%);
-        }
-
-        .holographic-screens {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 2rem;
-        }
-
-        .holographic-screens::before,
-        .holographic-screens::after {
-          content: '';
-          width: 200px;
-          height: 150px;
-          border: 1px solid rgba(59, 130, 246, 0.3);
-          background: rgba(59, 130, 246, 0.05);
-          animation: screenFlicker 3s ease-in-out infinite;
-        }
-
-        .ai-core-glow {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%);
-          animation: coreGlow 2s ease-in-out infinite;
-        }
-
-        .scene-contact {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 2rem;
-        }
-
-        .nova-hologram {
-          width: 150px;
-          height: 150px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          animation: hologramMaterialize 3s ease forwards;
-        }
-
-        .nova-figure {
-          width: 80px;
-          height: 120px;
-          background: linear-gradient(to bottom, rgba(59, 130, 246, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%);
-          border-radius: 40px 40px 20px 20px;
-          box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
-        }
-
-        .dialogue-container {
-          max-width: 600px;
-          padding: 0 2rem;
+          transform: translateX(-50%);
           text-align: center;
+          z-index: 10;
         }
 
         .dialogue-line {
-          font-family: var(--font-body, 'Inter', sans-serif);
+          font-family: 'Inter', sans-serif;
           font-size: clamp(1rem, 2vw, 1.25rem);
           color: #ffffff;
           margin: 0.5rem 0;
           opacity: 0;
           animation: dialogueFade 1s ease forwards;
-          line-height: 1.6;
+          text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
         }
 
-        .scene-transition {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background: #000;
-          animation: transitionToHero 2s ease forwards;
-        }
-
-        .hero-fade-in {
-          text-align: center;
-          animation: heroFadeIn 2s ease forwards 0.5s;
-          opacity: 0;
-        }
-
-        .hero-title {
-          font-family: var(--font-heading, 'Orbitron', sans-serif);
-          font-size: clamp(3rem, 8vw, 6rem);
-          color: #3B82F6;
-          letter-spacing: 0.2em;
-          margin-bottom: 1rem;
-        }
-
-        .hero-subtitle {
-          font-family: var(--font-heading, 'Orbitron', sans-serif);
-          font-size: clamp(1.5rem, 3vw, 2rem);
-          color: #ffffff;
-          margin-bottom: 0.5rem;
-        }
-
-        .hero-role {
-          font-family: var(--font-body, 'Inter', sans-serif);
-          font-size: clamp(0.875rem, 1.5vw, 1.125rem);
-          color: #94A3B8;
-        }
-
-        .scene-title {
-          position: absolute;
-          top: 2rem;
-          left: 50%;
-          transform: translateX(-50%);
-          font-family: var(--font-heading, 'Orbitron', sans-serif);
-          font-size: clamp(1rem, 2vw, 1.5rem);
-          color: #3B82F6;
-          letter-spacing: 0.2em;
-          opacity: 0.7;
-        }
-
-        .opening-skip-btn {
+        .skip-btn {
           position: absolute;
           bottom: 2rem;
           right: 2rem;
           padding: 0.75rem 1.5rem;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 0.5rem;
           background: rgba(0, 0, 0, 0.5);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           color: #94A3B8;
-          font-family: var(--font-body, 'Inter', sans-serif);
+          font-family: 'Inter', sans-serif;
           font-size: 0.875rem;
           cursor: pointer;
           transition: all 0.3s ease;
-          opacity: 0;
-          animation: fadeIn 1s ease forwards 3s;
+          z-index: 10;
         }
 
-        .opening-skip-btn:hover {
+        .skip-btn:hover {
           background: rgba(59, 130, 246, 0.2);
           border-color: #3B82F6;
           color: #ffffff;
         }
 
-        .opening-progress {
-          position: absolute;
-          bottom: 2rem;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .progress-segment {
-          width: 40px;
-          height: 3px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 2px;
-          transition: all 0.3s ease;
-        }
-
-        .progress-segment.active {
-          background: #3B82F6;
-          box-shadow: 0 0 10px #3B82F6;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes deepSpaceReveal {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes starsFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes nebulaFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes signalPulse {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.5); opacity: 1; }
-        }
-
-        @keyframes shipReveal {
-          from { opacity: 0; transform: scale(0.8); }
-          to { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes navLightBlink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-
-        @keyframes doorsOpen {
-          from { transform: translate(-50%, -50%) scaleX(0.3); opacity: 0; }
-          to { transform: translate(-50%, -50%) scaleX(1); opacity: 1; }
-        }
-
-        @keyframes energyFlow {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.7; }
-        }
-
-        @keyframes screenFlicker {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 0.8; }
-        }
-
-        @keyframes coreGlow {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-          50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
-        }
-
-        @keyframes hologramMaterialize {
-          from { opacity: 0; transform: scale(0.5); }
-          to { opacity: 1; transform: scale(1); }
-        }
-
         @keyframes dialogueFade {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes transitionToHero {
-          from { background: #000; }
-          to { background: #020617; }
-        }
-
-        @keyframes heroFadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         @media (max-width: 768px) {
-          .opening-skip-btn {
+          .skip-btn {
             bottom: 1rem;
             right: 1rem;
-          }
-
-          .opening-progress {
-            bottom: 1rem;
-          }
-
-          .progress-segment {
-            width: 24px;
           }
         }
       `}</style>
     </div>
+  );
+}
+
+// Docking Bay Scene
+function DockingBay() {
+  return (
+    <group>
+      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+      {/* Ship model will be added here */}
+      <mesh position={[0, 0, -20]}>
+        <boxGeometry args={[10, 6, 2]} />
+        <meshStandardMaterial color="#1a1a2e" emissive="#3B82F6" emissiveIntensity={0.2} />
+      </mesh>
+    </group>
+  );
+}
+
+// Ship Interior Scene
+function ShipInterior() {
+  return (
+    <group>
+      <Stars radius={50} depth={20} count={2000} factor={2} saturation={0} fade speed={1} />
+      {/* Holographic screens */}
+      <mesh position={[-5, 2, -10]}>
+        <planeGeometry args={[3, 2]} />
+        <meshBasicMaterial color="#3B82F6" transparent opacity={0.3} />
+      </mesh>
+      <mesh position={[5, 2, -10]}>
+        <planeGeometry args={[3, 2]} />
+        <meshBasicMaterial color="#3B82F6" transparent opacity={0.3} />
+      </mesh>
+      {/* AI Core */}
+      <mesh position={[0, 0, -15]}>
+        <sphereGeometry args={[2, 32, 32]} />
+        <meshBasicMaterial color="#3B82F6" transparent opacity={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+// NOVA Hologram
+function NovaHologram() {
+  const material = React.useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec2 vUv;
+        void main() {
+          float alpha = 0.3 + sin(uTime * 2.0) * 0.1;
+          gl_FragColor = vec4(0.23, 0.51, 0.96, alpha);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+    });
+  }, []);
+
+  useFrame((state) => {
+    material.uniforms.uTime.value = state.clock.elapsedTime;
+  });
+
+  return (
+    <mesh position={[0, 0, -10]}>
+      <capsuleGeometry args={[1, 2, 4, 8]} />
+      <primitive object={material} />
+    </mesh>
   );
 }
