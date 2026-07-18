@@ -93,8 +93,8 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
         <Canvas camera={{ position: [0, 0, 50], fov: 75 }} dpr={[1, 2]}>
           <color attach="background" args={['#000']} />
 
-          {/* Cinematic Post-Processing */}
-          <CinematicEffects bloomIntensity={1.2} chromaticAberration={0.2} noiseIntensity={0.3} />
+      {/* Cinematic Post-Processing */}
+      <CinematicEffects bloomIntensity={1.2} />
 
           {/* Lighting */}
           <ambientLight intensity={0.2} />
