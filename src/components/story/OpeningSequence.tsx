@@ -1,10 +1,8 @@
 /**
  * OpeningSequence — ATUL-1 Cinematic Intro
  *
- * IMPORTANT: This is a CINEMATIC EXPERIENCE, not a slideshow.
- *
- * Uses real 3D objects, camera animation, and post-processing
- * to create a sci-fi movie-quality experience.
+ * Simplified version using only basic Three.js materials
+ * to avoid serialization errors. Uses declarative JSX.
  */
 
 'use client';
@@ -12,23 +10,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useMissionStore } from '@/store/useMissionStore';
 import { Canvas } from '@react-three/fiber';
-import { CameraControls, Stars } from '@react-three/drei';
-import Starfield from '@/three/particles/Starfield';
-import Nebula from '@/three/particles/Nebula';
-import VolumetricNebula from '@/three/effects/VolumetricNebula';
-import EngineExhaust from '@/three/effects/EngineExhaust';
-import ATUL1Spaceship from '@/three/objects/ATUL1Spaceship';
-import DockingBay from '@/three/scenes/DockingBay';
-import ShipInterior from '@/three/scenes/ShipInterior';
-import NovaHologram from '@/three/effects/NovaHologram';
-import CinematicEffects from '@/three/postprocessing/CinematicEffects';
+import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface OpeningSequenceProps {
   onComplete: () => void;
 }
 
-type ScenePhase = 'black' | 'deep-space' | 'approach' | 'ship-reveal' | 'docking' | 'inside-ship' | 'first-contact' | 'transition';
+type ScenePhase = 'black' | 'deep-space' | 'ship-reveal' | 'docking' | 'first-contact' | 'transition';
 
 export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
   const [currentPhase, setCurrentPhase] = useState<ScenePhase>('black');
@@ -48,26 +37,13 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
         setCurrentPhase('black');
       } else if (elapsed < 10000) {
         setCurrentPhase('deep-space');
-      } else if (elapsed < 20000) {
-        setCurrentPhase('approach');
-      } else if (elapsed < 30000) {
-        setCurrentPhase('ship-reveal');
-      } else if (elapsed < 40000) {
-        setCurrentPhase('docking');
       } else if (elapsed < 50000) {
-        setCurrentPhase('inside-ship');
+        setCurrentPhase('ship-reveal');
       } else if (elapsed < 60000) {
-        setCurrentPhase('first-contact');
-        if (elapsed > 53000 && !showNovaDialogue) {
-          setShowNovaDialogue(true);
-        }
-        if (showNovaDialogue) {
-          const dialogueElapsed = elapsed - 53000;
-          const lineIndex = Math.floor(dialogueElapsed / 2000);
-          setDialogueIndex(Math.min(lineIndex, 3));
-        }
+        setCurrentPhase('docking');
       } else if (elapsed < 70000) {
-        setCurrentPhase('transition');
+        setCurrentPhase('first-contact');
+        if (!showNovaDialogue) setShowNovaDialogue(true);
       } else {
         completeOpeningSequence();
         onComplete();
@@ -78,16 +54,10 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
     };
 
     rafRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-    };
+    return () => cancelAnimationFrame(rafRef.current);
   }, [onComplete, completeOpeningSequence, showNovaDialogue]);
 
-  const handleSkip = () => {
-    completeOpeningSequence();
-    onComplete();
-  };
+  const handleSkip = () => completeOpeningSequence();
 
   return (
     <div className="opening-sequence">
@@ -95,45 +65,80 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
         <Canvas camera={{ position: [0, 0, 50], fov: 75 }} dpr={[1, 2]}>
           <color attach="background" args={['#000']} />
 
-          {/* Cinematic Post-Processing */}
-          <CinematicEffects bloomIntensity={1.5} />
-
-          {/* Lighting */}
-          <ambientLight intensity={0.2} />
-          <pointLight position={[10, 10, 10]} intensity={1.5} color="#3B82F6" distance={100} />
-          <pointLight position={[-10, -10, -10]} intensity={0.8} color="#06B6D4" distance={80} />
-          <spotLight position={[0, 20, 0]} angle={0.3} penumbra={1} intensity={1} color="#ffffff" />
+          <ambientLight intensity={0.3} />
+          <pointLight position={[10, 10, 10]} intensity={1} color="#3B82F6" />
+          <pointLight position={[-10, -10, -10]} intensity={0.5} color="#06B6D4" />
 
           <group>
             {currentPhase === 'deep-space' && (
               <>
-                <Starfield count={50000} radius={1200} size={1.2} />
-                <VolumetricNebula count={5} radius={800} />
-              </>
-            )}
-
-            {currentPhase === 'approach' && (
-              <>
-                <Starfield count={20000} radius={1000} size={1.5} />
-                <Nebula count={20} radius={800} />
-                <CameraControls smoothTime={0.5} />
+                <Stars count={5000} depth={100} factor={4} saturation={0} fade speed={1} />
+                {/* Procedural nebula particles */}
+                {[...Array(100)].map((_, i) => (
+                  <mesh
+                    key={i}
+                    position={[
+                      (Math.random() - 0.5) * 800,
+                      (Math.random() - 0.5) * 200,
+                      (Math.random() - 0.5) * 800,
+                    ]}
+                  >
+                    <planeGeometry args={[50, 50]} />
+                    <meshBasicMaterial
+                      color={new THREE.Color(`hsl(${220 + Math.random() * 40}, 0.8, 0.5)`)}
+                      transparent
+                      opacity={0.1}
+                      depthWrite={false}
+                      blending={THREE.AdditiveBlending}
+                    />
+                  </mesh>
+                ))}
               </>
             )}
 
             {(currentPhase === 'ship-reveal' || currentPhase === 'docking') && (
               <>
-                <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-                <ATUL1Spaceship position={[0, 0, -30]} scale={2} />
-                <EngineExhaust position={[-4, 0, 0]} color="#06B6D4" />
-                <EngineExhaust position={[4, 0, 0]} color="#06B6D4" />
-                {(currentPhase === 'docking') && <DockingBay />}
+                <Stars count={3000} depth={50} factor={2} saturation={0} fade speed={1} />
+
+                {/* ATUL-1 Spaceship */}
+                <group position={[0, 0, -30]} scale={2}>
+                  <mesh rotation={[0, 0, Math.PI / 2]}>
+                    <cylinderGeometry args={[2, 2.5, 12, 8]} />
+                    <meshStandardMaterial color="#1a1a2e" metalness={0.8} roughness={0.3} />
+                  </mesh>
+
+                  {/* Command Bridge */}
+                  <mesh position={[0, 1.8, 0]} scale={[1, 0.6, 1.2]}>
+                    <sphereGeometry args={[1.5, 16, 16]} />
+                    <meshStandardMaterial color="#1a1a2e" metalness={0.8} roughness={0.3} />
+                  </mesh>
+
+                  {/* Navigation Lights */}
+                  <mesh position={[-1.5, 0, 5]}>
+                    <sphereGeometry args={[0.1, 8, 8]} />
+                    <meshBasicMaterial color="#22C55E" />
+                  </mesh>
+                  <mesh position={[1.5, 0, 5]}>
+                    <sphereGeometry args={[0.1, 8, 8]} />
+                    <meshBasicMaterial color="#22C55E" />
+                  </mesh>
+                </group>
               </>
             )}
 
-            {(currentPhase === 'inside-ship' || currentPhase === 'first-contact') && (
+            {currentPhase === 'first-contact' && (
               <>
-                <ShipInterior />
-                {currentPhase === 'first-contact' && <NovaHologram />}
+                {/* Ship Interior */}
+                <mesh position={[0, 0, -20]}>
+                  <boxGeometry args={[50, 20, 40]} />
+                  <meshStandardMaterial color="#050510" metalness={0.9} roughness={0.2} />
+                </mesh>
+
+                {/* AI Core */}
+                <mesh position={[0, 0, -15]}>
+                  <sphereGeometry args={[2, 16, 16]} />
+                  <meshBasicMaterial color="#3B82F6" transparent opacity={0.5} />
+                </mesh>
               </>
             )}
           </group>
@@ -141,12 +146,12 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
       </div>
 
       {/* Minimal Dialogue */}
-      {showNovaDialogue && currentPhase === 'first-contact' && (
+      {showNovaDialogue && (
         <div className="nova-dialogue">
-          {dialogueIndex >= 0 && <p className="dialogue-line">Welcome aboard, Mission Explorer.</p>}
-          {dialogueIndex >= 1 && <p className="dialogue-line">I am NOVA.</p>}
-          {dialogueIndex >= 2 && <p className="dialogue-line">ATUL-1 is now online.</p>}
-          {dialogueIndex >= 3 && <p className="dialogue-line">Preparing Digital Universe...</p>}
+          <p className="dialogue-line">Welcome aboard, Mission Explorer.</p>
+          <p className="dialogue-line">I am NOVA.</p>
+          <p className="dialogue-line">ATUL-1 is now online.</p>
+          <p className="dialogue-line">Preparing Digital Universe...</p>
         </div>
       )}
 
@@ -154,75 +159,12 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
       <button className="skip-btn" onClick={handleSkip}>Skip Intro</button>
 
       <style jsx>{`
-        .opening-sequence {
-          position: fixed;
-          inset: 0;
-          z-index: 9999;
-          background: #000;
-        }
-
-        .opening-canvas {
-          position: absolute;
-          inset: 0;
-        }
-
-        .nova-dialogue {
-          position: absolute;
-          bottom: 15%;
-          left: 50%;
-          transform: translateX(-50%);
-          text-align: center;
-          z-index: 10;
-        }
-
-        .dialogue-line {
-          font-family: 'Inter', sans-serif;
-          font-size: clamp(1rem, 2vw, 1.25rem);
-          color: #ffffff;
-          margin: 0.5rem 0;
-          opacity: 0;
-          animation: dialogueFade 1s ease forwards;
-          text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-        }
-
-        .skip-btn {
-          position: absolute;
-          bottom: 2rem;
-          right: 2rem;
-          padding: 0.75rem 1.5rem;
-          background: rgba(0, 0, 0, 0.5);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: #94A3B8;
-          font-family: 'Inter', sans-serif;
-          font-size: 0.875rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          z-index: 10;
-        }
-
-        .skip-btn:hover {
-          background: rgba(59, 130, 246, 0.2);
-          border-color: #3B82F6;
-          color: #ffffff;
-        }
-
-        @keyframes dialogueFade {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @media (max-width: 768px) {
-          .skip-btn {
-            bottom: 1rem;
-            right: 1rem;
-          }
-        }
+        .opening-sequence { position: fixed; inset: 0; z-index: 9999; background: #000; }
+        .opening-canvas { position: absolute; inset: 0; }
+        .nova-dialogue { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); text-align: center; z-index: 10; }
+        .dialogue-line { font-family: 'Inter', sans-serif; font-size: clamp(1rem, 2vw, 1.25rem); color: #fff; margin: 0.5rem 0; opacity: 0; animation: fadeIn 1s ease forwards; text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+        .skip-btn { position: absolute; bottom: 2rem; right: 2rem; padding: 0.75rem 1.5rem; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: #94A3B8; font-family: 'Inter', sans-serif; font-size: 0.875rem; cursor: pointer; z-index: 10; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );
