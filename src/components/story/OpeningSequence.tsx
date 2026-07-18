@@ -3,40 +3,30 @@
  *
  * IMPORTANT: This is a CINEMATIC EXPERIENCE, not a slideshow.
  *
- * The scenes below describe visual events through 3D animation,
- * camera movement, lighting, and particle effects.
- *
- * Do NOT display:
- * - Scene titles
- * - Descriptive text
- * - PowerPoint-style slides
- * - Tutorial screens
- *
- * Only minimal dialogue appears in Scene 4 (First Contact).
- *
- * Scene 1 (0-10s): Black screen → Stars fade in → Nebula appears → Ship emerges
- * Scene 2 (10-20s): Camera flies toward ship → Docking bay doors open
- * Scene 3 (20-30s): Enter ship → Holographic screens appear → Systems boot
- * Scene 4 (30-40s): NOVA hologram materializes → Minimal dialogue
- * Scene 5 (40-50s): Transition to hero section
+ * Uses real 3D objects, camera animation, and post-processing
+ * to create a sci-fi movie-quality experience.
  */
 
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMissionStore } from '@/store/useMissionStore';
 import { Canvas } from '@react-three/fiber';
 import { CameraControls, Stars } from '@react-three/drei';
 import Starfield from '@/three/particles/Starfield';
 import Nebula from '@/three/particles/Nebula';
-import { useFrame } from '@react-three/fiber';
+import ATUL1Spaceship from '@/three/objects/ATUL1Spaceship';
+import DockingBay from '@/three/scenes/DockingBay';
+import ShipInterior from '@/three/scenes/ShipInterior';
+import NovaHologram from '@/three/effects/NovaHologram';
+import CinematicEffects from '@/three/postprocessing/CinematicEffects';
 import * as THREE from 'three';
 
 interface OpeningSequenceProps {
   onComplete: () => void;
 }
 
-type ScenePhase = 'black' | 'deep-space' | 'approach' | 'docking' | 'inside-ship' | 'first-contact' | 'transition';
+type ScenePhase = 'black' | 'deep-space' | 'approach' | 'ship-reveal' | 'docking' | 'inside-ship' | 'first-contact' | 'transition';
 
 export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
   const [currentPhase, setCurrentPhase] = useState<ScenePhase>('black');
@@ -52,7 +42,6 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
     const tick = () => {
       const elapsed = Date.now() - startTimeRef.current;
 
-      // Scene progression based on elapsed time
       if (elapsed < 2000) {
         setCurrentPhase('black');
       } else if (elapsed < 10000) {
@@ -60,27 +49,26 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
       } else if (elapsed < 20000) {
         setCurrentPhase('approach');
       } else if (elapsed < 30000) {
-        setCurrentPhase('docking');
+        setCurrentPhase('ship-reveal');
       } else if (elapsed < 40000) {
-        setCurrentPhase('inside-ship');
+        setCurrentPhase('docking');
       } else if (elapsed < 50000) {
+        setCurrentPhase('inside-ship');
+      } else if (elapsed < 60000) {
         setCurrentPhase('first-contact');
-        // Show dialogue after 3 seconds in first-contact scene
-        if (elapsed > 43000 && !showNovaDialogue) {
+        if (elapsed > 53000 && !showNovaDialogue) {
           setShowNovaDialogue(true);
         }
-        // Cycle dialogue
         if (showNovaDialogue) {
-          const dialogueElapsed = elapsed - 43000;
+          const dialogueElapsed = elapsed - 53000;
           const lineIndex = Math.floor(dialogueElapsed / 2000);
           setDialogueIndex(Math.min(lineIndex, 3));
         }
-      } else {
+      } else if (elapsed < 70000) {
         setCurrentPhase('transition');
-        setTimeout(() => {
-          completeOpeningSequence();
-          onComplete();
-        }, 3000);
+      } else {
+        completeOpeningSequence();
+        onComplete();
         return;
       }
 
@@ -101,35 +89,40 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
 
   return (
     <div className="opening-sequence">
-      {/* 3D Canvas */}
       <div className="opening-canvas">
         <Canvas camera={{ position: [0, 0, 50], fov: 75 }} dpr={[1, 2]}>
-          <Suspense fallback={null}>
-            {/* Lighting */}
-            <ambientLight intensity={0.3} />
-            <pointLight position={[10, 10, 10]} intensity={1} color="#3B82F6" />
-            <pointLight position={[-10, -10, -10]} intensity={0.5} color="#06B6D4" />
+          <color attach="background" args={['#000']} />
 
-            {/* Scene Elements */}
+          {/* Cinematic Post-Processing */}
+          <CinematicEffects bloomIntensity={1.2} chromaticAberration={0.2} noiseIntensity={0.3} />
+
+          {/* Lighting */}
+          <ambientLight intensity={0.2} />
+          <pointLight position={[10, 10, 10]} intensity={1.5} color="#3B82F6" distance={100} />
+          <pointLight position={[-10, -10, -10]} intensity={0.8} color="#06B6D4" distance={80} />
+          <spotLight position={[0, 20, 0]} angle={0.3} penumbra={1} intensity={1} color="#ffffff" />
+
+          <group>
             {currentPhase === 'deep-space' && (
               <>
-                <Starfield count={15000} radius={1000} size={1.5} />
-                <Nebula count={15} radius={600} />
+                <Starfield count={20000} radius={1000} size={1.5} />
+                <Nebula count={20} radius={800} />
               </>
             )}
 
             {currentPhase === 'approach' && (
               <>
-                <Starfield count={15000} radius={1000} size={1.5} />
-                <Nebula count={15} radius={600} />
-                <CameraControls />
+                <Starfield count={20000} radius={1000} size={1.5} />
+                <Nebula count={20} radius={800} />
+                <CameraControls smoothTime={0.5} />
               </>
             )}
 
-            {currentPhase === 'docking' && (
+            {(currentPhase === 'ship-reveal' || currentPhase === 'docking') && (
               <>
-                <Starfield count={15000} radius={1000} size={1.5} />
-                <DockingBay />
+                <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+                <ATUL1Spaceship position={[0, 0, -30]} scale={2} />
+                {(currentPhase === 'docking') && <DockingBay />}
               </>
             )}
 
@@ -139,32 +132,22 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
                 {currentPhase === 'first-contact' && <NovaHologram />}
               </>
             )}
-          </Suspense>
+          </group>
         </Canvas>
       </div>
 
-      {/* Minimal Dialogue - Only in First Contact Scene */}
+      {/* Minimal Dialogue */}
       {showNovaDialogue && currentPhase === 'first-contact' && (
         <div className="nova-dialogue">
-          {dialogueIndex >= 0 && (
-            <p className="dialogue-line">Welcome aboard, Mission Explorer.</p>
-          )}
-          {dialogueIndex >= 1 && (
-            <p className="dialogue-line">I am NOVA.</p>
-          )}
-          {dialogueIndex >= 2 && (
-            <p className="dialogue-line">ATUL-1 is now online.</p>
-          )}
-          {dialogueIndex >= 3 && (
-            <p className="dialogue-line">Preparing Digital Universe...</p>
-          )}
+          {dialogueIndex >= 0 && <p className="dialogue-line">Welcome aboard, Mission Explorer.</p>}
+          {dialogueIndex >= 1 && <p className="dialogue-line">I am NOVA.</p>}
+          {dialogueIndex >= 2 && <p className="dialogue-line">ATUL-1 is now online.</p>}
+          {dialogueIndex >= 3 && <p className="dialogue-line">Preparing Digital Universe...</p>}
         </div>
       )}
 
       {/* Skip Button */}
-      <button className="skip-btn" onClick={handleSkip}>
-        Skip Intro
-      </button>
+      <button className="skip-btn" onClick={handleSkip}>Skip Intro</button>
 
       <style jsx>{`
         .opening-sequence {
@@ -238,81 +221,5 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
         }
       `}</style>
     </div>
-  );
-}
-
-// Docking Bay Scene
-function DockingBay() {
-  return (
-    <group>
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-      {/* Ship model will be added here */}
-      <mesh position={[0, 0, -20]}>
-        <boxGeometry args={[10, 6, 2]} />
-        <meshStandardMaterial color="#1a1a2e" emissive="#3B82F6" emissiveIntensity={0.2} />
-      </mesh>
-    </group>
-  );
-}
-
-// Ship Interior Scene
-function ShipInterior() {
-  return (
-    <group>
-      <Stars radius={50} depth={20} count={2000} factor={2} saturation={0} fade speed={1} />
-      {/* Holographic screens */}
-      <mesh position={[-5, 2, -10]}>
-        <planeGeometry args={[3, 2]} />
-        <meshBasicMaterial color="#3B82F6" transparent opacity={0.3} />
-      </mesh>
-      <mesh position={[5, 2, -10]}>
-        <planeGeometry args={[3, 2]} />
-        <meshBasicMaterial color="#3B82F6" transparent opacity={0.3} />
-      </mesh>
-      {/* AI Core */}
-      <mesh position={[0, 0, -15]}>
-        <sphereGeometry args={[2, 32, 32]} />
-        <meshBasicMaterial color="#3B82F6" transparent opacity={0.5} />
-      </mesh>
-    </group>
-  );
-}
-
-// NOVA Hologram
-function NovaHologram() {
-  const material = React.useMemo(() => {
-    return new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float uTime;
-        varying vec2 vUv;
-        void main() {
-          float alpha = 0.3 + sin(uTime * 2.0) * 0.1;
-          gl_FragColor = vec4(0.23, 0.51, 0.96, alpha);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-    });
-  }, []);
-
-  useFrame((state) => {
-    material.uniforms.uTime.value = state.clock.elapsedTime;
-  });
-
-  return (
-    <mesh position={[0, 0, -10]}>
-      <capsuleGeometry args={[1, 2, 4, 8]} />
-      <primitive object={material} />
-    </mesh>
   );
 }
