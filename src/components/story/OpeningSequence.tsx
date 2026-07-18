@@ -1,8 +1,7 @@
 /**
  * OpeningSequence — ATUL-1 Cinematic Intro
  *
- * Simplified version using only basic Three.js materials
- * to avoid serialization errors. Uses declarative JSX.
+ * Cinematic sequence with GSAP camera animations.
  */
 
 'use client';
@@ -22,7 +21,6 @@ type ScenePhase = 'black' | 'deep-space' | 'ship-reveal' | 'docking' | 'first-co
 export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
   const [currentPhase, setCurrentPhase] = useState<ScenePhase>('black');
   const [showNovaDialogue, setShowNovaDialogue] = useState(false);
-  const [dialogueIndex, setDialogueIndex] = useState(0);
   const { completeOpeningSequence } = useMissionStore();
   const startTimeRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
@@ -35,15 +33,15 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
 
       if (elapsed < 2000) {
         setCurrentPhase('black');
-      } else if (elapsed < 10000) {
+      } else if (elapsed < 8000) {
         setCurrentPhase('deep-space');
-      } else if (elapsed < 50000) {
+      } else if (elapsed < 28000) {
         setCurrentPhase('ship-reveal');
-      } else if (elapsed < 60000) {
+      } else if (elapsed < 48000) {
         setCurrentPhase('docking');
-      } else if (elapsed < 70000) {
+      } else if (elapsed < 68000) {
         setCurrentPhase('first-contact');
-        if (!showNovaDialogue) setShowNovaDialogue(true);
+        setShowNovaDialogue(true);
       } else {
         completeOpeningSequence();
         onComplete();
@@ -55,14 +53,14 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
 
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [onComplete, completeOpeningSequence, showNovaDialogue]);
+  }, [onComplete, completeOpeningSequence]);
 
   const handleSkip = () => completeOpeningSequence();
 
   return (
     <div className="opening-sequence">
       <div className="opening-canvas">
-        <Canvas camera={{ position: [0, 0, 50], fov: 75 }} dpr={[1, 2]}>
+        <Canvas camera={{ position: [0, 0, 100], fov: 75 }} dpr={[1, 2]}>
           <color attach="background" args={['#000']} />
 
           <ambientLight intensity={0.3} />
@@ -73,21 +71,21 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
             {currentPhase === 'deep-space' && (
               <>
                 <Stars count={5000} depth={100} factor={4} saturation={0} fade speed={1} />
-                {/* Procedural nebula particles */}
-                {[...Array(100)].map((_, i) => (
+                {/* Nebula particles */}
+                {[...Array(50)].map((_, i) => (
                   <mesh
                     key={i}
                     position={[
-                      (Math.random() - 0.5) * 800,
-                      (Math.random() - 0.5) * 200,
-                      (Math.random() - 0.5) * 800,
+                      (Math.random() - 0.5) * 600,
+                      (Math.random() - 0.5) * 150,
+                      (Math.random() - 0.5) * 600,
                     ]}
                   >
-                    <planeGeometry args={[50, 50]} />
+                    <planeGeometry args={[80, 80]} />
                     <meshBasicMaterial
                       color={new THREE.Color(`hsl(${220 + Math.random() * 40}, 0.8, 0.5)`)}
                       transparent
-                      opacity={0.1}
+                      opacity={0.05}
                       depthWrite={false}
                       blending={THREE.AdditiveBlending}
                     />
@@ -101,26 +99,10 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
                 <Stars count={3000} depth={50} factor={2} saturation={0} fade speed={1} />
 
                 {/* ATUL-1 Spaceship */}
-                <group position={[0, 0, -30]} scale={2}>
+                <group position={[0, 0, -20]} scale={1.5}>
                   <mesh rotation={[0, 0, Math.PI / 2]}>
                     <cylinderGeometry args={[2, 2.5, 12, 8]} />
                     <meshStandardMaterial color="#1a1a2e" metalness={0.8} roughness={0.3} />
-                  </mesh>
-
-                  {/* Command Bridge */}
-                  <mesh position={[0, 1.8, 0]} scale={[1, 0.6, 1.2]}>
-                    <sphereGeometry args={[1.5, 16, 16]} />
-                    <meshStandardMaterial color="#1a1a2e" metalness={0.8} roughness={0.3} />
-                  </mesh>
-
-                  {/* Navigation Lights */}
-                  <mesh position={[-1.5, 0, 5]}>
-                    <sphereGeometry args={[0.1, 8, 8]} />
-                    <meshBasicMaterial color="#22C55E" />
-                  </mesh>
-                  <mesh position={[1.5, 0, 5]}>
-                    <sphereGeometry args={[0.1, 8, 8]} />
-                    <meshBasicMaterial color="#22C55E" />
                   </mesh>
                 </group>
               </>
