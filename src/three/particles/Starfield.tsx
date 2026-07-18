@@ -60,7 +60,7 @@ export default function Starfield({ count = 15000, radius = 1000, size = 1.5, co
       depthWrite: false,
       transparent: true,
       opacity: 0.9,
-      color: color ? new THREE.Color(color) : undefined,
+      color: color ? new THREE.Color(color) : new THREE.Color('#ffffff'),
     });
 
     return new THREE.Points(geometry, material);
