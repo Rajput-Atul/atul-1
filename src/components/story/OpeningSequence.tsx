@@ -15,6 +15,8 @@ import { Canvas } from '@react-three/fiber';
 import { CameraControls, Stars } from '@react-three/drei';
 import Starfield from '@/three/particles/Starfield';
 import Nebula from '@/three/particles/Nebula';
+import VolumetricNebula from '@/three/effects/VolumetricNebula';
+import EngineExhaust from '@/three/effects/EngineExhaust';
 import ATUL1Spaceship from '@/three/objects/ATUL1Spaceship';
 import DockingBay from '@/three/scenes/DockingBay';
 import ShipInterior from '@/three/scenes/ShipInterior';
@@ -93,8 +95,8 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
         <Canvas camera={{ position: [0, 0, 50], fov: 75 }} dpr={[1, 2]}>
           <color attach="background" args={['#000']} />
 
-      {/* Cinematic Post-Processing */}
-      <CinematicEffects bloomIntensity={1.2} />
+          {/* Cinematic Post-Processing */}
+          <CinematicEffects bloomIntensity={1.5} />
 
           {/* Lighting */}
           <ambientLight intensity={0.2} />
@@ -105,8 +107,8 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
           <group>
             {currentPhase === 'deep-space' && (
               <>
-                <Starfield count={20000} radius={1000} size={1.5} />
-                <Nebula count={20} radius={800} />
+                <Starfield count={50000} radius={1200} size={1.2} />
+                <VolumetricNebula count={5} radius={800} />
               </>
             )}
 
@@ -122,6 +124,8 @@ export default function OpeningSequence({ onComplete }: OpeningSequenceProps) {
               <>
                 <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
                 <ATUL1Spaceship position={[0, 0, -30]} scale={2} />
+                <EngineExhaust position={[-4, 0, 0]} color="#06B6D4" />
+                <EngineExhaust position={[4, 0, 0]} color="#06B6D4" />
                 {(currentPhase === 'docking') && <DockingBay />}
               </>
             )}
